@@ -1,0 +1,79 @@
+import React, { useState } from 'react';
+import { ChakraProvider, Box, VStack, Heading, Text, Input, Button, Image, useToast } from '@chakra-ui/react';
+
+export default function App() {
+  const [message, setMessage] = useState('');
+  const [file, setFile] = useState(null);
+  const [analysis, setAnalysis] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const toast = useToast();
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setIsLoading(true);
+    setAnalysis('');
+
+    const formData = new FormData();
+    formData.append('message', message);
+    if (file) formData.append('file', file);
+
+    try {
+      const response = await fetch('/api/analyzecrystal', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) throw new Error('Failed to analyze crystal');
+
+      const data = await response.json();
+      setAnalysis(data.analysis);
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: error.message,
+        status: 'error',
+        duration: 9000,
+        isClosable: true,
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return (
+    <ChakraProvider>
+      <Box maxWidth="800px" margin="auto" padding={8}>
+        <VStack spacing={8}>
+          <Heading>Spiritual Crystal Identifier</Heading>
+          <form onSubmit={handleSubmit} style={{ width: '100%' }}>
+            <VStack spacing={4}>
+              <Input
+                placeholder="Describe your crystal or ask a question"
+                value={message}
+                onChange={(e) => setMessage(e.target.value)}
+                required
+              />
+              <Input
+                type="file"
+                accept="image/*"
+                onChange={(e) => setFile(e.target.files[0])}
+              />
+              <Button type="submit" colorScheme="blue" isLoading={isLoading}>
+                Analyze Crystal
+              </Button>
+            </VStack>
+          </form>
+          {file && (
+            <Image src={URL.createObjectURL(file)} maxHeight="200px" objectFit="contain" />
+          )}
+          {analysis && (
+            <Box borderWidth={1} borderRadius="lg" padding={4} width="100%">
+              <Text fontWeight="bold">Analysis:</Text>
+              <Text>{analysis}</Text>
+            </Box>
+          )}
+        </VStack>
+      </Box>
+    </ChakraProvider>
+  );
+}
